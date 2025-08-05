@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+html, body {
+  background: transparent !important;
+  margin: 0;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 20px;
+  color: white;
+}
+
+#chat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.message {
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+<div id="chat"></div>
+
+<script>
+const CHANNEL = "alternate_reality_"; // Ton pseudo Twitch en minuscule
+const MESSAGE_LIFETIME = 12000; // Durée d'affichage en ms
+
+const ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
+
+ws.addEventListener("open", () => {
+  ws.send("PASS oauth:anonymous");
+  ws.send("NICK justinfan" + Math.floor(Math.random() * 100000));
+  ws.send("JOIN #" + CHANNEL);
+});
+
+ws.addEventListener("message", (event) => {
+  const data = event.data.trim();
+
+  // Répondre aux PING
+  if (data.startsWith("PING")) {
+    ws.send("PONG :tmi.twitch.tv");
+    return;
+  }
+
+  // Filtrer les messages PRIVMSG
+  const match = data.match(/^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.+)$/);
+  if (match) {
+    addMessage(match[1]);
+  }
+});
+
+function addMessage(text) {
+  const msgEl = document.createElement("div");
+  msgEl.className = "message";
+  msgEl.textContent = text;
+  document.getElementById("chat").appendChild(msgEl);
+
+  // Supprimer après un délai
+  setTimeout(() => {
+    msgEl.remove();
+  }, MESSAGE_LIFETIME);
+}
+</script>
+</body>
+</html>
